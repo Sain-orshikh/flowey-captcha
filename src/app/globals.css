@@ -1,26 +1,176 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f4e3;
+  --foreground: #553a41;
+  --primary: #ffd166;
+  --primary-hover: #ff9e00;
+  --container-bg: #ffffff;
+  --border-color: #cdb4db;
+  --flowey-neutral: #fff8a3;
+  --flowey-happy: #a3ffb0;
+  --flowey-sad: #a3d2ff;
+  --flowey-jumpscare: #ffa3a3;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark mode variables - can be customized later */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #2d2b27;
+    --foreground: #f5e9e2;
+    --container-bg: #3a3731;
+    --border-color: #8a6d9b;
   }
 }
 
+/* Custom radial gradient utilities */
+@layer utilities {
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+  
+  .bg-gradient-radial-at-center {
+    background: radial-gradient(circle at center, var(--tw-gradient-stops));
+  }
+  
+  /* Custom z-index utilities for proper layering */
+  .z-1 { z-index: 1; }
+  .z-2 { z-index: 2; }
+  .z-3 { z-index: 3; }
+  .z-5 { z-index: 5; }
+}
+
+/* Undertale-style text animation */
+@keyframes undertale-text {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.undertale-text {
+  animation: undertale-text 0.5s ease-out forwards;
+}
+
+/* Flowey specific animations */
+@keyframes flowey-idle {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-5px) scale(1.02); }
+}
+
+.flowey-idle {
+  animation: flowey-idle 3s ease-in-out infinite;
+}
+
+@keyframes flowey-jumpscare {
+  0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  25% { transform: scale(1.3) rotate(-5deg); filter: brightness(1.5) hue-rotate(180deg); }
+  50% { transform: scale(1.5) rotate(5deg); filter: brightness(2) hue-rotate(270deg); }
+  75% { transform: scale(1.2) rotate(-3deg); filter: brightness(1.8) hue-rotate(90deg); }
+  100% { transform: scale(1.4) rotate(0deg); filter: brightness(1.5) hue-rotate(0deg); }
+}
+
+.flowey-jumpscare {
+  animation: flowey-jumpscare 0.5s ease-in-out;
+}
+
+/* Spotlight effect */
+@keyframes spotlight-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.05); }
+}
+
+.spotlight-pulse {
+  animation: spotlight-pulse 4s ease-in-out infinite;
+}
+
+/* Grass animation */
+@keyframes grass-sway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(2deg); }
+  75% { transform: rotate(-2deg); }
+}
+
+.grass-sway {
+  animation: grass-sway 3s ease-in-out infinite;
+}
+
+/* Base styles */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Arial', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Container styling */
+.container {
+  background-color: var(--container-bg);
+  transition: background-color 0.3s ease;
+}
+
+/* Input styling */
+input[type="text"] {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input[type="text"]:focus {
+  border-color: var(--primary-hover);
+  box-shadow: 0 0 0 2px rgba(255, 158, 0, 0.2);
+}
+
+/* Button styling */
+button {
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Additional animations */
+@keyframes jumpscare-alt {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+  75% {
+    transform: rotate(-5deg) scale(1.5);
+  }
+  100% {
+    transform: rotate(5deg) scale(1.5);
+  }
+}
+
+@keyframes pulse-alt {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Flowey expression animations */
+.jumpscare-active {
+  animation: flowey-jumpscare 0.5s ease-in-out;
+}
+
+.flowey-expression {
+  transition: background-color 0.5s ease, transform 0.3s ease;
+}
+
+.flowey-expression.happy {
+  animation: pulse-alt 2s infinite;
+}
+
+/* Custom utilities */
+@layer utilities {
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  }
 }

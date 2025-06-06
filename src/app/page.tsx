@@ -1,103 +1,208 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import FloweyDisplay, { FloweyExpression } from '@/components/FloweyDisplay';
+import ExpressionAnalyzer from '@/services/expressionAnalyzer';
+
+interface AnalysisResult {
+  expression: FloweyExpression;
+  confidence: number;
+  reasoning: string;
+  sentiment: {
+    score: number;
+    comparative: number;
+    positive: string[];
+    negative: string[];
+  };
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // State for the input text
+  const [inputText, setInputText] = useState('');
+  
+  // State for Flowey's expression
+  const [expression, setExpression] = useState<FloweyExpression>('neutral');
+  
+  // State for jumpscare
+  const [isJumpscare, setIsJumpscare] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // State for analysis results (for debugging)
+  const [lastAnalysis, setLastAnalysis] = useState<AnalysisResult | null>(null);
+
+  // State to track if user has submitted input (to show analyzed response)
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  // State to track if user is currently typing
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Function to analyze text using the new AI-powered analyzer
+  const analyzeText = async (text: string) => {
+    console.log('Analyzing text:', text); // Debug log
+    if (!text.trim()) return 'neutral';
+    
+    try {
+      const analysis = await ExpressionAnalyzer.analyzeExpression(text);
+      setLastAnalysis(analysis); // Store for debugging
+      
+      // Log analysis for debugging
+      console.log('Expression Analysis:', analysis);
+      console.log('Setting expression to:', analysis.expression);
+      
+      return analysis.expression;
+    } catch (error) {
+      console.error('Error analyzing text:', error);
+      return 'neutral';
+    }
+  };
+
+  // Get contextual dialogue based on analysis
+  const getFloweyDialogue = () => {
+    // If user is typing or hasn't submitted anything yet, show default message
+    if (isTyping || !hasSubmitted || !lastAnalysis) {
+      return "* Prove you're human. Make Flowey smile!";
+    }
+    
+    // Show analyzed response only after submission
+    return ExpressionAnalyzer.getContextualDialogue(lastAnalysis);
+  };
+
+  // Handle input change (no analysis while typing)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newText = e.target.value;
+    setInputText(newText);
+    
+    // Mark as typing and reset submission state when user starts typing
+    if (newText !== inputText) {
+      setIsTyping(true);
+      setHasSubmitted(false);
+      
+      // Clear typing state after user stops typing for 500ms
+      setTimeout(() => {
+        setIsTyping(false);
+      }, 500);
+    }
+  };
+
+  // Separate jumpscare function
+  const handleJumpscare = () => {
+    setIsJumpscare(true);
+    setExpression('jumpscare');
+    
+    // Reset jumpscare after 3 seconds
+    setTimeout(async () => {
+      setIsJumpscare(false);
+      const newExpression = await analyzeText(inputText);
+      setExpression(newExpression as FloweyExpression);
+    }, 3000);
+  };
+
+  // Handle button click for analysis and potential jumpscare
+  const handleButtonClick = async () => {
+    if (!inputText.trim() || isJumpscare) return;
+    
+    try {
+      // Mark as submitted and stop typing state
+      setHasSubmitted(true);
+      setIsTyping(false);
+      
+      // Analyze the text when user clicks the button
+      const newExpression = await analyzeText(inputText);
+      setExpression(newExpression as FloweyExpression);
+      
+      // Auto-trigger jumpscare for certain expressions
+      if (newExpression === 'jumpscare') {
+        handleJumpscare();
+      }
+    } catch (error) {
+      console.error('Error analyzing text on button click:', error);
+      // Fallback to manual jumpscare if analysis fails
+      handleJumpscare();
+    }
+  };
+
+  return (
+    <main className="min-h-screen relative overflow-hidden bg-black">
+      {/* Dark background with subtle texture */}
+      <div className="absolute inset-0 bg-gradient-radial from-gray-900/20 via-black to-black z-0"></div>
+      
+      {/* Main grass area spotlights */}
+      {/* Center grass spotlight - outermost layer */}
+      <div className="mt-5 absolute top-1/2 left-1/2 transform -translate-x-1/2 translate-y-12 opacity-20 z-50">
+        <div className="w-96 h-32 bg-gray-500 blur-sm" style={{borderRadius: '50% 50% 50% 50% / 20% 20% 80% 80%'}}></div>
+      </div>
+      
+      {/* Center grass spotlight - middle layer */}
+      <div className="mt-5 absolute top-1/2 left-1/2 transform -translate-x-1/2 translate-y-12 z-2 opacity-50">
+        <div className="w-80 h-24 bg-gray-300 blur-xs" style={{borderRadius: '50% 50% 50% 50% / 25% 25% 75% 75%'}}></div>
+      </div>
+      
+      {/* Center grass spotlight - inner layer */}
+      <div className="mt-5 absolute top-1/2 left-1/2 transform -translate-x-1/2 translate-y-12 z-3 opacity-80">
+        <div className="w-64 h-16 bg-gray-100" style={{borderRadius: '50% 50% 50% 50% / 30% 30% 70% 70%'}}></div>
+      </div>
+      
+      {/* Grass patch with animation */}
+      <div className="absolute mt-6 top-1/2 left-1/2 transform -translate-x-1/2 translate-y-12 z-5">
+        <div className="w-32 h-8 bg-green-800 rounded-full shadow-lg"></div>
+        <div className="w-28 h-6 bg-green-700 rounded-full mx-auto -mt-2"></div>
+        {/* Animated grass blades */}
+        <div className="absolute -top-2 left-4 w-1 h-3 bg-green-600 rounded-t-full grass-sway" style={{animationDelay: '0s'}}></div>
+        <div className="absolute -top-1 left-8 w-1 h-2 bg-green-600 rounded-t-full grass-sway" style={{animationDelay: '0.5s'}}></div>
+        <div className="absolute -top-2 left-12 w-1 h-3 bg-green-600 rounded-t-full grass-sway" style={{animationDelay: '1s'}}></div>
+        <div className="absolute -top-1 left-16 w-1 h-2 bg-green-600 rounded-t-full grass-sway" style={{animationDelay: '1.5s'}}></div>
+        <div className="absolute -top-2 left-20 w-1 h-3 bg-green-600 rounded-t-full grass-sway" style={{animationDelay: '2s'}}></div>
+        <div className="absolute -top-1 left-24 w-1 h-2 bg-green-600 rounded-t-full grass-sway" style={{animationDelay: '2.5s'}}></div>
+      </div>
+      
+      {/* Flowey positioned in the center */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+        <FloweyDisplay expression={expression} isJumpscare={isJumpscare} />
+      </div>
+      
+      {/* UI overlay positioned at the bottom */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-20">
+        <div className="bg-black/80 backdrop-blur-sm border border-gray-600 rounded-lg p-6 space-y-4">
+          {/* Flowey's dialogue */}
+          <div className="text-white text-center mb-4">
+            <p className="text-lg font-mono undertale-text">
+              {getFloweyDialogue()}
+            </p>
+            {/* Debug information */}
+            {lastAnalysis && (
+              <div className="mt-2 text-xs text-gray-400">
+                <p>Expression: {lastAnalysis.expression} ({Math.round(lastAnalysis.confidence * 100)}% confidence)</p>
+                <p>Sentiment Score: {lastAnalysis.sentiment.score}</p>
+                {lastAnalysis.sentiment.positive.length > 0 && (
+                  <p>Positive words: {lastAnalysis.sentiment.positive.join(', ')}</p>
+                )}
+                {lastAnalysis.sentiment.negative.length > 0 && (
+                  <p>Negative words: {lastAnalysis.sentiment.negative.join(', ')}</p>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* Text Input */}
+          <input
+            type="text"
+            value={inputText}
+            onChange={handleInputChange}
+            className="w-full p-3 bg-gray-800 text-white border border-gray-600 rounded-md focus:outline-none focus:border-yellow-400 font-mono"
+            placeholder="* (You whisper to yourself...)"
+            disabled={isJumpscare}
+          />
+          
+          {/* Action Button */}
+          <button
+            onClick={handleButtonClick}
+            disabled={isJumpscare || !inputText.trim()}
+            className={`w-full px-4 py-3 bg-yellow-600 text-black font-bold rounded-md hover:bg-yellow-500 transition-colors font-mono
+                       ${isJumpscare || !inputText.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            * {isJumpscare ? 'YOU CANNOT' : 'Respond to Flowey'}
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </main>
   );
 }
